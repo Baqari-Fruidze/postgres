@@ -1,8 +1,29 @@
 import pool from "../config/db.congif.js";
 
 async function getProducts(req, res) {
-  const result = await pool.query("SELECT * FROM products");
-  res.json(result.rows);
+  try {
+    const result = await pool.query("SELECT * FROM products");
+    res.json(result.rows);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "internal serve error" });
+  }
+}
+
+async function getOneProduct(req, res) {
+  try {
+    const { id } = req.params;
+    const result = await pool.query("SELECT * FROM products WHERE id = $1", [
+      id,
+    ]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "can not find product" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ err: "internal server  error" });
+  }
 }
 
 async function createProduct(req, res) {
@@ -23,11 +44,6 @@ async function createProduct(req, res) {
 }
 async function deleteProduct(req, res) {
   const id = Number(req.params.id);
-  console.log(req.query);
-  // const result = await pool.query(
-  //   "DELETE FROM PRODUCTS WHERE $1 RETURNING * ",
-  //   [id]
-  // );
 
   const result = await pool.query(
     "DELETE FROM products WHERE id = $1 RETURNING *",
@@ -41,4 +57,4 @@ async function deleteProduct(req, res) {
     .json({ message: "Product deleted", product: result.rows[0] });
 }
 
-export { getProducts, createProduct, deleteProduct };
+export { getProducts, createProduct, deleteProduct, getOneProduct };
