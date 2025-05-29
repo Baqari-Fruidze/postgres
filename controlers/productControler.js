@@ -27,20 +27,36 @@ async function getOneProduct(req, res) {
 }
 
 async function createProduct(req, res) {
-  const { name, price, category } = req.body;
-  if (!name || !price || !category) {
+  const { name, price, category, description, stock, slug } = req.body;
+  console.log(name, price, category);
+  if (!name || !price || !category || !description || !stock || !slug) {
     return res
       .status(400)
       .json({ message: "name price and category are required fields" });
   }
   const result = await pool.query(
-    "INSERT INTO products (name,price, category) VALUES ($1, $2, $3) RETURNING id",
-    [name, price, category]
+    "INSERT INTO products (name,price,category,description,stock) VALUES ($1, $2, $3, $4, $5,$6) RETURNING id",
+    [name, price, category, description, stock, slug]
   );
   res.status(201).json({
     message: "product succesfuly added",
     productId: result.rows[0].id,
   });
+}
+
+async function updateProduct(req, res) {
+  try {
+    const id = req.params.id;
+    const { name, price, description, stock, slug, category } = req.body;
+    const result = await pool.query(
+      "UPDATE products SET name=$1, price=$2, description=$3, stock = $4, slug = $5, category=$6 WHERE  id = $7  RETURNING *",
+      [name, price, description, stock, slug, category, id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "internal server error" });
+  }
 }
 async function deleteProduct(req, res) {
   const id = Number(req.params.id);
@@ -57,4 +73,23 @@ async function deleteProduct(req, res) {
     .json({ message: "Product deleted", product: result.rows[0] });
 }
 
-export { getProducts, createProduct, deleteProduct, getOneProduct };
+async function getCategoryStats(req, res) {
+  try {
+    const result = await pool.query(
+      "SELECT category, COUNT(*), AVG(price) as avarege,MIN(price),MAX(price) FROM products GROUP BY category"
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "internal server error" });
+  }
+}
+
+export {
+  getProducts,
+  createProduct,
+  deleteProduct,
+  getOneProduct,
+  updateProduct,
+  getCategoryStats,
+};
