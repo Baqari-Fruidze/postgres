@@ -1,5 +1,5 @@
 import express from "express";
-
+import userRoutes from "./routes/userRoutes.js";
 import ProductRoutes from "./routes/productRoutes.js";
 
 const app = express();
@@ -11,6 +11,7 @@ app.use(express.json());
 //   });
 // });
 app.use("/api/products", ProductRoutes);
+app.use("/api/users", userRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

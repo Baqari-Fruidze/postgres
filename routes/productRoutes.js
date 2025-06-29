@@ -5,6 +5,7 @@ import {
   updateProduct,
   getCategoryStats,
   createProduct,
+  buyProduct,
 } from "../controlers/productControler.js";
 // import { createProduct } from "../controlers/productControler.js";
 import express from "express";
@@ -16,5 +17,6 @@ router.get("/:id", getOneProduct);
 router.post("/", createProduct);
 router.delete("/:id", deleteProduct);
 router.put("/:id", updateProduct);
+router.post("/buyProduct/:id", buyProduct);
 
 export default router;

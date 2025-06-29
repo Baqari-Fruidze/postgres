@@ -1,0 +1,19 @@
+model users {
+  id        Int    @id @default(autoincrement())
+  firstName String @db.VarChar(255)
+  lastName  String @db.VarChar(255)
+  email     String @db.VarChar(255)
+}
+model usersProducts{
+  userId    Int
+  productId Int
+userId users? @relation (fields:[userId],references:[id])
+productId products? @relation (fields:[productId],references:[id])
+@@id([userId, productId]) // Composite primary key
+}
+model users {
+  id        Int    @id @default(autoincrement())
+  firstName String @db.VarChar(255)
+  lastName  String @db.VarChar(255)
+  email     String @db.VarChar(255)
+}

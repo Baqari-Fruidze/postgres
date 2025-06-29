@@ -119,6 +119,52 @@ async function getCategoryStats(req, res) {
   }
 }
 
+async function buyProduct(req, res) {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    /// check user
+    const user = await prisma.user.findUnique({
+      where: {
+        id: parseInt(userId),
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ error: "can not find user" });
+    }
+
+    // check product
+    const product = await prisma.products.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+    });
+    if (!product) {
+      return res.status(404).json({ message: "product not found" });
+    }
+    /// check stock
+    if (product.stock < 0) {
+      return res.status(400).json({
+        message: "product is out of stock",
+      });
+    }
+    await prisma.products.update({
+      where: { id: parseInt(id) },
+      data: { stock: product.stock - 1 },
+    });
+    const userProduct = await prisma.usersProducts.create({
+      data: {
+        userId,
+        productId: parseInt(id),
+      },
+    });
+    return res.status(201).json(userProduct);
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 export {
   getProducts,
   createProduct,
@@ -126,4 +172,5 @@ export {
   getOneProduct,
   updateProduct,
   getCategoryStats,
+  buyProduct,
 };
