@@ -1,4 +1,6 @@
 import { PrismaClient } from "../generated/prisma/index.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
 
@@ -87,4 +89,53 @@ async function deleteUser(req, res) {
   }
 }
 
-export { deleteUser, updateUser, createUser, getUser, getUsers };
+async function signUp(req, res) {
+  try {
+    const { firstName, lastName, email, password } = req.body;
+    if (!firstName || !lastName || !email || !password)
+      return res
+        .status(400)
+        .json({ message: "please enter all required fields" });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: { firstName, lastName, email, password: hashedPassword },
+    });
+    return res.status(201).json(user);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ message: "internal server error" });
+  }
+}
+
+async function signIn(req, res) {
+  try {
+    const { email, password } = req.body;
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "invalid credentials" });
+    }
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+    return res.json({ token });
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+export {
+  deleteUser,
+  updateUser,
+  createUser,
+  getUser,
+  getUsers,
+  signUp,
+  signIn,
+};
