@@ -129,6 +129,22 @@ async function signIn(req, res) {
     console.log(err);
   }
 }
+async function getProfile(req, res) {
+  const id = Number(req.body.user.id);
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      email: true,
+      lastName: true,
+      firstName: true,
+    },
+  });
+  if (!user) {
+    return res.status(404).json({ error: "user do not exist" });
+  }
+  return res.json(user);
+}
 
 export {
   deleteUser,
@@ -138,4 +154,5 @@ export {
   getUsers,
   signUp,
   signIn,
+  getProfile,
 };

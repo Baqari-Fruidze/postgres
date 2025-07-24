@@ -9,7 +9,7 @@ import {
 } from "../controlers/productControler.js";
 // import { createProduct } from "../controlers/productControler.js";
 import express from "express";
-import { auth } from "../controlers/middlware/auth.js";
+import { auth } from "../middlware/auth.js";
 const router = express.Router();
 
 router.get("/", getProducts);

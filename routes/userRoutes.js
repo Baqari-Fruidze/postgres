@@ -8,11 +8,14 @@ import {
   getUsers,
   signUp,
   signIn,
+  getProfile,
 } from "../controlers/usersControler.js";
+import { auth } from "../middlware/auth.js";
 
 const router = express.Router();
 
 router.get("/", getUsers);
+router.post("/profile", auth, getProfile);
 router.post("/", createUser);
 router.post("/signUp", signUp);
 router.post("/signIn", signIn);
