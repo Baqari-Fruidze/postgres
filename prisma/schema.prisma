@@ -30,15 +30,23 @@ model products {
 }
 
 model user {
-  id            Int             @id @default(autoincrement())
-  created_at    DateTime        @default(now()) @db.Timestamp(6)
-  firstName     String          @db.VarChar(255)
-  lastName      String          @db.VarChar(255)
-  email         String          @unique @db.VarChar(255)
-  password      String          @db.VarChar(255)
+  id         Int      @id @default(autoincrement())
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  firstName  String   @db.VarChar(255)
+  lastName   String   @db.VarChar(255)
+  email      String   @unique @db.VarChar(255)
+  password   String   @db.VarChar(255)
+  roleId     Int      @default(2)
 
+  roles roles @relation(fields: [roleId], references: [id])
 
   usersProducts usersProducts[]
+}
+
+model roles {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(255)
+  user user[]
 }
 
 model usersProducts {
@@ -47,6 +55,4 @@ model usersProducts {
   productId Int
   user      user     @relation(fields: [userId], references: [id])
   product   products @relation(fields: [productId], references: [id])
-
-
 }

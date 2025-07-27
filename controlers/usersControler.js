@@ -110,6 +110,7 @@ async function signUp(req, res) {
 async function signIn(req, res) {
   try {
     const { email, password } = req.body;
+    console.log(req.body);
     const user = await prisma.user.findUnique({
       where: { email },
     });
