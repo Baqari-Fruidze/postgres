@@ -113,19 +113,24 @@ async function signIn(req, res) {
     console.log(req.body);
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        roles: true,
+      },
     });
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    delete user.password;
     if (!isPasswordValid) {
       return res.status(401).json({ message: "invalid credentials" });
     }
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      { id: user.id, role: user.roles.name },
       process.env.JWT_SECRET,
       {
         expiresIn: "1h",
       }
     );
-    return res.json({ token });
+    return res.json({ message: "user sign in succesfully", user, token });
   } catch (err) {
     console.log(err);
   }

@@ -12,3 +12,12 @@ export const auth = (req, res, next) => {
     next();
   });
 };
+
+export const isAdmin = (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return res
+      .status(401)
+      .json({ message: "only admins can access this routes" });
+  }
+  next();
+};
