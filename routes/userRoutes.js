@@ -10,17 +10,17 @@ import {
   signIn,
   getProfile,
 } from "../controlers/usersControler.js";
-import { auth } from "../middlware/auth.js";
+import { auth, isAdmin } from "../middlware/auth.js";
 
 const router = express.Router();
 
-router.get("/", getUsers);
-router.post("/profile", auth, getProfile);
-router.post("/", createUser);
+router.get("/", auth, isAdmin, getUsers);
+router.post("/profile", auth, isAdmin, getProfile);
+router.post("/", auth, isAdmin, createUser);
 router.post("/signUp", signUp);
 router.post("/signIn", signIn);
-router.get("/:id", getUser);
-router.put("/:id", updateUser);
-router.delete("/:id", deleteUser);
+router.get("/:id", auth, isAdmin, getUser);
+router.put("/:id", auth, isAdmin, updateUser);
+router.delete("/:id", auth, isAdmin, deleteUser);
 
 export default router;

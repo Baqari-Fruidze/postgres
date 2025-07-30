@@ -21,3 +21,10 @@ export const isAdmin = (req, res, next) => {
   }
   next();
 };
+
+export const isManagerOrAdmin = (req, res, next) => {
+  if (req.user.role !== "manager" && req.user.role !== "admin") {
+    return res.status(401).json({ message: "you can not access this routes " });
+  }
+  next();
+};
