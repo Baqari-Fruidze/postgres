@@ -9,6 +9,8 @@ import {
   signUp,
   signIn,
   getProfile,
+  forgotPassword,
+  resetPassword,
 } from "../controlers/usersControler.js";
 import { auth, isAdmin } from "../middlware/auth.js";
 
@@ -22,5 +24,7 @@ router.post("/signIn", signIn);
 router.get("/:id", auth, isAdmin, getUser);
 router.put("/:id", auth, isAdmin, updateUser);
 router.delete("/:id", auth, isAdmin, deleteUser);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 export default router;

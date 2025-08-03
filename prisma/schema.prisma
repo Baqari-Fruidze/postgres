@@ -37,10 +37,22 @@ model user {
   email      String   @unique @db.VarChar(255)
   password   String   @db.VarChar(255)
   roleId     Int      @default(2)
+  otpId      Int?      @unique
+
+  otp otp? @relation(fields: [otpId], references: [id])
 
   roles roles @relation(fields: [roleId], references: [id])
 
   usersProducts usersProducts[]
+}
+
+model otp {
+  id        Int       @id @default(autoincrement())
+  otpCode   String?   @db.VarChar(6)
+  otpExpiry DateTime? @db.Timestamp(6)
+  otpCount  Int       @default(2)
+
+  user user? @relation
 }
 
 model roles {

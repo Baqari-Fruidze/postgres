@@ -1,6 +1,9 @@
 import { PrismaClient } from "../generated/prisma/index.js";
 import bcrypt from "bcrypt";
+import { text } from "express";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
+import sendMail from "../utils/emailService.js";
 
 const prisma = new PrismaClient();
 
@@ -115,6 +118,7 @@ async function signIn(req, res) {
       where: { email },
       include: {
         roles: true,
+        otp: true,
       },
     });
 
@@ -151,6 +155,113 @@ async function getProfile(req, res) {
   }
   return res.json(user);
 }
+async function forgotPassword(req, res) {
+  const { email } = req.body;
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    return res.status(404).json({ message: "user not found" });
+  }
+
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+  if (!user.otpId) {
+    const createdOtp = await prisma.otp.create({
+      data: {
+        otpCode,
+        otpExpiry,
+      },
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        otp: { connect: { id: createdOtp.id } },
+      },
+    });
+  } else {
+    await prisma.otp.update({
+      where: { id: user.otpId },
+      data: {
+        otpCode,
+        otpExpiry,
+      },
+    });
+  }
+
+  ///////////////////  sending mail
+
+  try {
+    await sendMail(
+      email,
+      "password reset otp code",
+      `<h1>Password Reset OTP Code</h1>
+      <p>You requested a password reset. Use the following OTP code to reset your password:</p>
+      <h2 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; text-align: center;">${otpCode}</h2>
+      <p>This code will expire in 10 minutes.</p>
+      <p>If you didn't request this, please ignore this email.</p>`
+    );
+    res
+      .status(201)
+      .json({ message: "otp code have been send, please check email" });
+  } catch (err) {
+    console.log("error while senidign error", err);
+    return res.status(501).json({ message: "failed to send email" });
+  }
+}
+
+async function resetPassword(req, res) {
+  const { email, otpCode, newPassword } = req.body;
+  const maxAtemps = 5;
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: { otp: true },
+  });
+  if (!user) return res.status(404).json({ message: "User not found" });
+  if (user.otp.otpCount >= maxAtemps) {
+    await prisma.otp.update({
+      where: { id: user.otp.id },
+      data: {
+        otpCode: null,
+        otpExpiry: null,
+        otpCount: 0,
+      },
+    });
+    return res
+      .status(429)
+      .json({ message: "too many false attemps, please request new OTP" });
+  }
+  if (user.otp.otpExpiry < new Date()) {
+    return res.status(400).json({ message: "OTP has expired" });
+  }
+  if (otpCode !== user.otp.otpCode) {
+    await prisma.otp.update({
+      where: { id: user.otp.id },
+      data: {
+        otpCount: { increment: 1 },
+      },
+    });
+    const remaining = maxAtemps - user.otp.otpCount;
+    return res.status(400).json({
+      message: `Invalid OTP code. ${remaining} attempts remaining.`,
+    });
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashedPassword },
+  });
+  await prisma.otp.update({
+    where: { id: user.otpId },
+    data: {
+      otpCode: null,
+      otpExpiry: null,
+    },
+  });
+
+  res.status(201).json({ message: "password updated successfuly" });
+}
 
 export {
   deleteUser,
@@ -161,4 +272,6 @@ export {
   signUp,
   signIn,
   getProfile,
+  forgotPassword,
+  resetPassword,
 };
