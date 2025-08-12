@@ -11,9 +11,10 @@ import {
   getProfile,
   forgotPassword,
   resetPassword,
+  updateProfilePicture,
 } from "../controlers/usersControler.js";
 import { auth, isAdmin } from "../middlware/auth.js";
-
+import { uploadProfilePicture } from "../middlware/uploadfile.js";
 const router = express.Router();
 
 router.get("/", auth, isAdmin, getUsers);
@@ -26,5 +27,10 @@ router.put("/:id", auth, isAdmin, updateUser);
 router.delete("/:id", auth, isAdmin, deleteUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.post(
+  "/upload-profile-picture/:id",
+  uploadProfilePicture.single("profilePicture"),
+  updateProfilePicture
+);
 
 export default router;

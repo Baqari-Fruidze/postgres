@@ -1,6 +1,7 @@
 import pool from "../config/db.congif.js";
 import { PrismaClient } from "../generated/prisma/index.js";
-
+import XLSX from "xlsx";
+import fs from "fs";
 const prisma = new PrismaClient();
 async function getProducts(req, res) {
   try {
@@ -12,6 +13,11 @@ async function getProducts(req, res) {
         category: {
           select: {
             name: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
           },
         },
       },
@@ -166,6 +172,63 @@ async function buyProduct(req, res) {
     console.log(err);
   }
 }
+async function uploadProductExcel(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "no file uploaded" });
+    }
+    const workbook = XLSX.readFile(req.file.path);
+
+    const sheetName = workbook.SheetNames[0];
+    const workSheet = workbook.Sheets[sheetName];
+    const sheet = XLSX.utils.sheet_to_json(workSheet);
+    await prisma.products.createMany({
+      data: sheet.map((item) => ({
+        name: item.name,
+        price: item.price,
+        categoryId: item.categoryId,
+        description: item.description,
+        stock: item.stock,
+        slug: item.slug,
+      })),
+    });
+    fs.unlinkSync(req.file.path);
+    res.json({ message: "products uploaded successfuly" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "internal server error" });
+  }
+}
+async function updateProductImages(req, res) {
+  const { id } = req.params;
+  const product = await prisma.products.findUnique({
+    where: { id: Number(id) },
+  });
+  console.log(req.files);
+  if (!product) {
+    if (req.files.length > 0) {
+      req.files.forEach((file) => {
+        if (fs.existsSync(`./${file.path}`)) {
+          console.log("in");
+          fs.unlinkSync(`./${file.path}`);
+        }
+      });
+    }
+    return res.status(404).json({ message: "product not found" });
+  }
+  if (!req.files && !req.files.length === 0) {
+    return res.status(400).json({ message: "no file uploaded" });
+  }
+  await prisma.productImage.createMany({
+    data: req.files.map((file) => ({
+      productId: Number(id),
+      url: file.path,
+    })),
+  });
+  return res
+    .status(200)
+    .json({ message: "product images uploaded successfuly" });
+}
 
 export {
   getProducts,
@@ -175,4 +238,6 @@ export {
   updateProduct,
   getCategoryStats,
   buyProduct,
+  uploadProductExcel,
+  updateProductImages,
 };

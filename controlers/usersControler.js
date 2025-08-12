@@ -4,6 +4,7 @@ import { text } from "express";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import sendMail from "../utils/emailService.js";
+import { appError } from "../utils/errorhandler.js";
 
 const prisma = new PrismaClient();
 
@@ -121,11 +122,14 @@ async function signIn(req, res) {
         otp: true,
       },
     });
+    if (!user) {
+      return res.status(401).json(new appError("invalid credentials", 401));
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    delete user.password;
+
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "invalid credentials" });
+      return res.status(401).json(new appError("invalid credentials", 401));
     }
     const token = jwt.sign(
       { id: user.id, role: user.roles.name },
@@ -134,7 +138,8 @@ async function signIn(req, res) {
         expiresIn: "1h",
       }
     );
-    return res.json({ message: "user sign in succesfully", user, token });
+    delete user.password;
+    return res.json({ message: "user signed in successfuly", token, user });
   } catch (err) {
     console.log(err);
   }
@@ -262,6 +267,19 @@ async function resetPassword(req, res) {
 
   res.status(201).json({ message: "password updated successfuly" });
 }
+async function updateProfilePicture(req, res) {
+  const { id } = req.params;
+  if (!req.file) {
+    return res.status(400).json({ message: "no file uploaded" });
+  }
+  const user = await prisma.user.update({
+    where: {
+      id: Number(id),
+    },
+    data: { profilePicture: req.file.path },
+  });
+  res.json({ message: "profile pic uploaded" });
+}
 
 export {
   deleteUser,
@@ -274,4 +292,5 @@ export {
   getProfile,
   forgotPassword,
   resetPassword,
+  updateProfilePicture,
 };
