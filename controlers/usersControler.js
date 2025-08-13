@@ -111,7 +111,7 @@ async function signUp(req, res) {
   }
 }
 
-async function signIn(req, res) {
+async function signIn(req, res, next) {
   try {
     const { email, password } = req.body;
     console.log(req.body);
@@ -123,13 +123,13 @@ async function signIn(req, res) {
       },
     });
     if (!user) {
-      return res.status(401).json(new appError("invalid credentials", 401));
+      return next(new appError("invalid credentials", 401));
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json(new appError("invalid credentials", 401));
+      return next(new appError("invalid credentials", 401));
     }
     const token = jwt.sign(
       { id: user.id, role: user.roles.name },
